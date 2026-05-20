@@ -3,8 +3,11 @@
 # Species: RAZO
 # Created: May 15, 2026
 # Creators: Abigail Muscat, add your names!
+# A few notes as I have been going: in order to have each individual unique I combined Nest.ID Chamber and Plot. This was a bit of trial an error but I discovered that plots can have the same nest IDs. I made a chick stage df with as many possible statuses as I could think of, but we will likely need to add more as we encounter them (same for feathers). Within the hatch date function I added a calculation to determine the final check, but realized it is more nuanced (it can be last NC, except if there are times we miss a nest one time and check it the next). I am honestly not sure if the date of last check is needed. I was thinking of it as a measure of if we stopped monitoring early due to failure or nothing at all there.
 
-#databases
+# NOTE WILL NEED TO STANDARDIZED PLOT NAMES
+
+#load packages
 library(dplyr)
 library(lubridate)
 library(tidyr)
@@ -24,7 +27,8 @@ dir <- "/Volumes/T7 Shield/UofM Masters/NestSuccess/Raw Files"
 ## Set "Fname" to be the unique identifier for each file needed
 
 Fname_nest <- "2023_RAZOprod"
-Fname_weight <- "ChickWeights_prelim"
+
+Fname_weight <- "chick_weights"
 
 # Read in data ----
 weight_data <- read.csv(file.path(dir,paste(Fname_weight,".csv", sep = "")))
@@ -40,6 +44,7 @@ prod_data <- read.csv(file.path(dir,paste(Fname_nest,".csv", sep = "")))
 # adjust prod file ----
 #remove comments columns:
 prod_data <- subset(prod_data, select = -c(Exclude., Field.Comment.., Notes))
+
 
 #mess with prod file - make it so the columns are labelled by DOY
 meta <- prod_data[1, ]      # first row = DOY row
@@ -79,6 +84,8 @@ chick_stages <- c(
   "AD", "A*D", "AFE", "D", "FE", "C", "F",
   "AF", "2AFE", "2D", "2F", "2FE", "A*F", "A*FE"
 )
+
+#can make ones for other things too, I did chick because it had the most options and manually entered the others below
 
 # add unique name to each nest ----         
 #add unique identified
@@ -180,48 +187,48 @@ hatch_dates <- nest_long %>%
 
 #observed feather stage duration (not biological) ----
 feather_groups <- list(
-  down = c("D", "DFC"),
-  mid  = c("FE", "PFC"),
-  final = c("F", "MFC")
+  down = c("D", "DFC", "AD", "A*D", "2AD"),
+  featheremerge  = c("FE", "PFC", "AFE", "2AFE", "A*FE"),
+  feathered = c("F", "MFC", "AF", "2AF", "A*F")
 )
 
 
-feather_lookup <- tibble(
+feather_lookup <- tibble( #table of feather groups
   Stage = unlist(feather_groups),
   feather_stage = rep(names(feather_groups), lengths(feather_groups))
 )
   
 
 feather_durations <- nest_long %>%
-  inner_join(feather_lookup, by = "Stage") %>%
+  inner_join(feather_lookup, by = "Stage") %>% #join feather groups with nest_long to calculate how long each feather status was noted for each chick
   group_by(Nest_unique, feather_stage) %>%
   summarize(
     start = min(DOY),
     end   = max(DOY),
-    duration = end - start,
+    duration = end - start +1, # add one to make inclusive, if only one day then it is not 0
     .groups = "drop"
   )
 
-feather_wide <- feather_durations %>%
+feather_wide <- feather_durations %>% #convert long df to wide format
   select(Nest_unique, feather_stage, duration) %>%
   pivot_wider(
     names_from = feather_stage,
     values_from = duration
   )
 
-prod_mainfile <- hatch_dates %>%
-  left_join(feather_wide, by = "Nest_ID")
+RAZO_prod_mainfile <- hatch_dates %>% #add in feather duration info to hatch date info
+  left_join(feather_wide, by = "Nest_unique")
 
 
 
 #fledging weight ----
-chick_weight_info <- function(prod_mainfile, weight_data,
+chick_weight_info <- function(RAZO_prod_mainfile, weight_data,
                                     fledge_weight = 195) {
   #pull in weight information
   
   weight_hits <- weight_data %>%
-    filter(!is.na(Weight)) %>%
-    mutate(reached_fledge = Weight >= fledge_weight) %>%
+    filter(!is.na(chick_weight)) %>%
+    mutate(reached_fledge = chick_weight >= fledge_weight) %>%
     group_by(Nest_ID) %>%
     summarize(
       ever_fledged_weight = any(reached_fledge),
@@ -236,7 +243,7 @@ chick_weight_info <- function(prod_mainfile, weight_data,
 }
 
   #join weights into main data
-  prod_mainfile <- prod_mainfile %>%
+RAZO_prod_mainfile <- RAZO_prod_mainfile %>%
     left_join(weight_hits, by = "Nest_ID")
 
   
