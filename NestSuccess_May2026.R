@@ -204,7 +204,7 @@ hatch_dates <- nest_long %>%
       NA_real_
     }, 
     #last day of check
-    Last_check = max(DOY[!is.na(Stage)]), #NOT DOING WHAT WE WANT, I was thinking knowing if we stopped checking early due to failure or N might be worth knowing, but not sure if needed
+    Last_check = max(DOY[!is.na(Stage)]), #NOT DOING WHAT WE WANT, I was thinking knowing if we stopped checking early due to failure or N might be worth knowing, but not sure if needed, we never use it again anyways
     
     #empty nest observation 
     N_first = if(any(Stage == "N")) min(DOY[Stage == "N"], na.rm = TRUE) else NA_real_, # first time nest empty
