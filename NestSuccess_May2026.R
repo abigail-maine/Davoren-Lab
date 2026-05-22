@@ -8,9 +8,9 @@
 
 
 #load packages
-library(dplyr)
-library(lubridate)
-library(tidyr)
+library(dplyr) # for summarizing and mutating everything
+library(lubridate) # for dates
+library(tidyr) # for pivoting dataframes
 
 #links/resources:
 #https://www.listendata.com/2017/03/if-else-in-r.html
