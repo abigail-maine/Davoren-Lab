@@ -13,6 +13,7 @@ library(lubridate) # for dates
 library(tidyr) # for pivoting dataframes
 
 #links/resources:
+#dplyr cheat sheet on sharepoint!! https://umanitoba.sharepoint.com/:b:/r/sites/DavorenLab/Shared%20Documents/R%20Code%20Tutorials/Cheat%20Sheets/data-transformation.pdf?csf=1&web=1&e=8pE1us 
 #https://www.listendata.com/2017/03/if-else-in-r.html
 #https://github.com/tidyverse/dplyr/issues/3768
 #https://stackoverflow.com/questions/58443566/what-does-na-rm-true-actually-means
