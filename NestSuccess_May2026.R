@@ -2,8 +2,12 @@
 # Determining Nest Success 
 # Species: RAZO
 # Created: May 15, 2026
-# Creators: Abigail Muscat, add your names!
-# A few notes as I have been going: in order to have each individual unique I combined Nest.ID Chamber and Plot. This was a bit of trial an error but I discovered that plots can have the same nest IDs. I made a chick stage df with as many possible statuses as I could think of, but we will likely need to add more as we encounter them (same for feathers). Within the hatch date function I added a calculation to determine the final check, but realized it is more nuanced (it can be last NC, except if there are times we miss a nest one time and check it the next). I am honestly not sure if the date of last check is needed. I was thinking of it as a measure of if we stopped monitoring early due to failure or nothing at all there.The logic progression for classifications might need tweaking, and accounting for NAs. I did a trail run and examined if I agreed with the classification or not (see file I sent). There may be room for adjustments there. Some parts could likely be reorganized.
+# Creators: Abigail Muscat, Emily Runnells, add your names!
+# A few notes as I have been going: 
+# in order to have each individual unique I combined Nest.ID Chamber and Plot. This was a bit of trial an error but I discovered that plots can have the same nest IDs. 
+# I made a chick stage df with as many possible statuses as I could think of, but we will likely need to add more as we encounter them (same for feathers). 
+# Within the hatch date function I added a calculation to determine the final check, but realized it is more nuanced (it can be last NC, except if there are times we miss a nest one time and check it the next). I am honestly not sure if the date of last check is needed. I was thinking of it as a measure of if we stopped monitoring early due to failure or nothing at all there.
+# The logic progression for classifications might need tweaking, and accounting for NAs. I did a trail run and examined if I agreed with the classification or not (see file I sent). There may be room for adjustments there. Some parts could likely be reorganized.
 
 
 
