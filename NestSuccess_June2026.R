@@ -39,7 +39,7 @@ dir <- here::here("Data_NestSuccess")
 ## Set "Fname" to be the unique identifier for each file needed (just listing each year for now, can set up a loop later)
 
 # Fname_nest <- "2023_RAZOprod"
-Fname_nest <- "2022_RAZOprod"
+Fname_nest <- "2024_RAZOprod"
 
 Fname_weight <- "chick_weights"
 
@@ -116,8 +116,8 @@ fledge_weightdf <- fledge_weightdf %>% # fix weight column names for later
 str(prod_data)
 
 #remove comments columns:
-prod_data <- subset(prod_data, select = -c(Exclude., Field.Comment.., Notes)) # for 2023
-prod_data <- subset(prod_data, select = -c(Exclude.from.Phenology., Reason.for.Phenology.Exclusion, Exclude.from.Fledge.Success., Exclude.from.Fledge.Success., Reason.for.Fledge.Success.Exclusion, Field.Comment.., Notes))# for 2022
+prod_data <- subset(prod_data, select = -c(Exclude., Field.Comment.., Notes)) # for 2023, 2024
+prod_data <- subset(prod_data, select = -c(Exclude.from.Phenology., Reason.for.Phenology.Exclusion, Exclude.from.Fledge.Success., Exclude.from.Fledge.Success., Reason.for.Fledge.Success.Exclusion, Field.Comment.., Notes))# for 2020
 
 
 
@@ -134,19 +134,21 @@ data[ , -(1:6)] <- lapply(data[ , -(1:6)], as.character)
 #filter RAZO
 RAZO_proddata <- data %>%
   filter(Species %in% c("RAZO")) %>%
-  # filter(!Control...Experiment...Not.Used %in% c("Not Used")) #in the all sp year file this column is called Type, change it out when using full file; removing crevices not used
-  filter(!Type %in% c("Not Used"))
+  filter(!Control...Experiment...Not.Used %in% c("Not Used")) #in the all sp year file this column is called Type, change it out when using full file; removing crevices not used
+  # filter(!Type %in% c("Not Used")) # for 2020?
 
 # standardize plot names
-unique(RAZO_proddata$Plot) # eventually need to get all years - this is 2023
+unique(RAZO_proddata$Plot) # eventually need to get all years 
 
 RAZO_proddata$Plot[RAZO_proddata$Plot == "RAZO colony"] <- "MAIN"
+RAZO_proddata$Plot[RAZO_proddata$Plot == "Main Colony"] <- "MAIN"
 RAZO_proddata$Plot[RAZO_proddata$Plot == "colony"] <- "MAIN"
 RAZO_proddata$Plot[RAZO_proddata$Plot == "Colony"] <- "MAIN" 
 RAZO_proddata$Plot[RAZO_proddata$Plot == "RAZO Jumble"] <- "JUMBLE"
 RAZO_proddata$Plot[RAZO_proddata$Plot == "Jumble"] <- "JUMBLE"
 RAZO_proddata$Plot[RAZO_proddata$Plot == "North"] <- "NORTH" 
-RAZO_proddata$Plot[RAZO_proddata$Plot == "Control"] <- "NORTH" 
+RAZO_proddata$Plot[RAZO_proddata$Plot == "Control"] <- "NORTH"
+RAZO_proddata$Plot[RAZO_proddata$Plot == "RAZO North"] <- "NORTH"
 
 
 unique(RAZO_proddata$Plot)
@@ -408,7 +410,7 @@ classification_df <- RAZO_prod_mainfile %>%
     
       
       
-write.csv(classification_df, "classification2023_test.csv", row.names = FALSE)
+write.csv(classification_df, "classification2024_test.csv", row.names = FALSE)
       
       
 
