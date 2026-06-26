@@ -39,7 +39,11 @@ dir <- here::here("Data_NestSuccess")
 ## Set "Fname" to be the unique identifier for each file needed (just listing each year for now, can set up a loop later)
 
 # Fname_nest <- "2023_RAZOprod"
-Fname_nest <- "2024_RAZOprod"
+# Fname_nest <- "2024_RAZOprod"
+# Fname_nest <- "2020_RAZOprod"
+# Fname_nest <- "2025_RAZOprod"
+Fname_nest <- "2021_RAZOprod"
+# Fname_nest <- "2022_RAZOprod"
 
 Fname_weight <- "chick_weights"
 
@@ -111,13 +115,21 @@ fledge_weightdf <- fledge_weightdf %>% # fix weight column names for later
          Nest.ID = nest_id, 
          Plot = plot)
 
+# standardize plot names
+unique(fledge_weightdf$Plot) # eventually need to get all years 
+
+
+fledge_weightdf$Plot[fledge_weightdf$Plot == "Razo North"] <- "NORTH" 
+fledge_weightdf$Plot[fledge_weightdf$Plot == "RAZO North"] <- "NORTH"
+
 # adjust prod file ----
 
 str(prod_data)
 
 #remove comments columns:
-prod_data <- subset(prod_data, select = -c(Exclude., Field.Comment.., Notes)) # for 2023, 2024
-prod_data <- subset(prod_data, select = -c(Exclude.from.Phenology., Reason.for.Phenology.Exclusion, Exclude.from.Fledge.Success., Exclude.from.Fledge.Success., Reason.for.Fledge.Success.Exclusion, Field.Comment.., Notes))# for 2020
+prod_data <- subset(prod_data, select = -c(Exclude., Field.Comment.., Notes)) # for 2023, 2024, 2025
+# (for 2020)
+prod_data <- subset(prod_data, select = -c(Exclude.from.Phenology., Reason.for.Phenology.Exclusion, Exclude.from.Fledge.Success., Exclude.from.Fledge.Success., Reason.for.Fledge.Success.Exclusion, Field.Comment.., Notes)) #for 2020, 2021, 2022
 
 
 
@@ -134,8 +146,8 @@ data[ , -(1:6)] <- lapply(data[ , -(1:6)], as.character)
 #filter RAZO
 RAZO_proddata <- data %>%
   filter(Species %in% c("RAZO")) %>%
-  filter(!Control...Experiment...Not.Used %in% c("Not Used")) #in the all sp year file this column is called Type, change it out when using full file; removing crevices not used
-  # filter(!Type %in% c("Not Used")) # for 2020?
+  # filter(!Control...Experiment...Not.Used %in% c("Not Used")) #in the all sp year file this column is called Type, change it out when using full file; removing crevices not used
+  filter(!Type %in% c("Not Used")) # for 2020, 2021, 2022
 
 # standardize plot names
 unique(RAZO_proddata$Plot) # eventually need to get all years 
@@ -165,21 +177,34 @@ nest_long <- RAZO_proddata %>%
 
 #prod status options ----
 #figure out all the possible prod options -- once we have all years would need to go through this again, I just used 2023 as a tester year
+
+nest_long$Stage = trimws(nest_long$Stage) #remove extra spaces that snuck in
 unique(nest_long$Stage)
 #ATPU in a RAZO crevice I am assuming means we saw a puffin so I won't touch that.
+#Dead options: Eb, BE, X, XE
 #E options: E, A*E, 2AE, 2E, AE, 
-#Cw or Ep options: A*Ep, AEp, Cw
+#Cw or Ep options: A*Ep, AEp, Cw, Ep, PE
 # C options: 2AD, A*D, AD, AFE, D, FE, C, F, AF, 2AFE, 2D, 2F, 2FE, A*F, A*FE,
+
+dead_stages <- c("Eb", "BE", "X", "XE")
+hatch_stages <- c("A*Ep", "AEp", "Cw", "Ep", "PE")
 
 chick_stages <- c(
   "AD", "A*D", "AFE", "D", "FE", "C", "F",
-  "AF", "2AFE", "2D", "2F", "2FE", "A*F", "A*FE"
+  "AF", "2AFE", "2D", "2AD", "2F", "2FE", "A*F", "A*FE", "A + D"
 )
+
+egg_stages <- c("E", "A*E", "2AE", "2E", "AE")
+
+
+unknown_stages <- c("AU", "AU?", "2AU", "U", "A", "A?")
+
+
 
 #can make ones for other things too, I did chick because it had the most options and manually entered the others below
 
 # add unique name to each nest ----         
-#add unique identified
+#add unique identifier
 nest_long <- nest_long %>%
   unite("Nest_unique", Nest.ID, Chamber, Plot, remove = FALSE)
 
@@ -198,8 +223,8 @@ hatch_dates <- nest_long %>%
   summarize(
     
     #last egg date
-    E_last = if(any(Stage %in% c("E", "A*E", "2AE", "2E", "AE"))) {
-      max(DOY[Stage %in% c("E", "A*E", "2AE", "2E", "AE")], na.rm = TRUE)
+    E_last = if(any(Stage %in% egg_stages)) {
+      max(DOY[Stage %in% egg_stages], na.rm = TRUE)
     } else {
       NA_real_
     },
@@ -216,19 +241,19 @@ hatch_dates <- nest_long %>%
       NA_real_
     },
     #ep/cw date
-    Ep_date = if(any(Stage %in% c("Ep", "Cw", "A*Ep"))) {
-      min(DOY[Stage %in% c("Ep", "Cw", "A*Ep")], na.rm = TRUE)
+    Ep_date = if(any(Stage %in% hatch_stages)) {
+      min(DOY[Stage %in% hatch_stages], na.rm = TRUE)
     } else {
       NA_real_
     }, 
     #death date
-    Death_date = if(any(Stage %in% c("X", "Eb", "Ex"))) {
-      min(DOY[Stage %in% c("X", "Eb", "Ex")], na.rm = TRUE)
+    Death_date = if(any(Stage %in% dead_stages)) {
+      min(DOY[Stage %in% dead_stages], na.rm = TRUE)
     } else {
       NA_real_
     }, 
     #last day of check
-    Last_check = max(DOY[!is.na(Stage)]), #NOT DOING WHAT WE WANT, I was thinking knowing if we stopped checking early due to failure or N might be worth knowing, but not sure if needed, we never use it again anyways
+    Last_check = max(DOY[!is.na(Stage)]), #NOT DOING WHAT WE WANT, I was thinking knowing if we stopped checking early due to failure or N might be worth knowing, but not sure if needed, we never use it again anyways (In 2024 we filled in "NC" = not checked on all blank cells)
     
     #empty nest observation 
     N_first = if(any(Stage == "N")) min(DOY[Stage == "N"], na.rm = TRUE) else NA_real_, # first time nest empty
@@ -246,9 +271,9 @@ hatch_dates <- nest_long %>%
     U_after_chick = if ( #look for U after chick if no N recorded
       !is.na(C_last) &&
       !any(Stage == "N" & DOY > C_last, na.rm = TRUE) &&
-      any(Stage == "U" & DOY > C_last, na.rm = TRUE)
+      any(Stage %in% unknown_stages & DOY > C_last, na.rm = TRUE)
     ) {
-      min(DOY[Stage == "U" & DOY > C_last], na.rm = TRUE)
+      min(DOY[Stage %in% unknown_stages & DOY > C_last], na.rm = TRUE)
     } else {
       NA_real_
     },
@@ -288,28 +313,43 @@ hatch_dates <- nest_long %>%
   )
 
 # add metadata back
+# hatch_dates <- hatch_dates %>%
+#   left_join(
+#     nest_long %>%
+#       distinct(Nest_unique, Species, Chamber, Nest.ID, Plot, Control...Experiment...Not.Used), #again may need to change to 'Type' - use code below, also we filtered by Species earlier so species may be redundant here
+#     by = "Nest_unique" ) %>%
+#       dplyr::select( # reorder so the identifying columns comes first
+#         Nest_unique,
+#         Species,
+#         Chamber,
+#         Nest.ID,
+#         Plot,
+#         Control...Experiment...Not.Used,
+#         everything()
+#       )
+
 hatch_dates <- hatch_dates %>%
   left_join(
     nest_long %>%
-      distinct(Nest_unique, Species, Chamber, Nest.ID, Plot, Control...Experiment...Not.Used), #again may need to change to 'Type', also we filtered by Species earlier so species may be redundant here
+      distinct(Nest_unique, Species, Chamber, Nest.ID, Plot, Type), 
     by = "Nest_unique" ) %>%
-      dplyr::select( # reorder so the identifying columns comes first
-        Nest_unique,
-        Species,
-        Chamber,
-        Nest.ID,
-        Plot,
-        Control...Experiment...Not.Used,
-        everything()
-      )
-
+  dplyr::select( # reorder so the identifying columns comes first
+    Nest_unique,
+    Species,
+    Chamber,
+    Nest.ID,
+    Plot,
+    Type,
+    everything()
+  )
 
 #observed feather stage duration (not biological) ----
 feather_groups <- list(
-  down = c("D", "DFC", "AD", "A*D", "2AD"),
-  featheremerge  = c("FE", "PFC", "AFE", "2AFE", "A*FE"),
-  feathered = c("F", "MFC", "AF", "2AF", "A*F")
+  down = c("D", "DFC", "AD", "A*D", "2AD", "2D", "A + D", "A+D"),
+  featheremerge  = c("FE", "PFC", "AFE", "2AFE", "A*FE", "2FE", "A+FE"),
+  feathered = c("F", "MFC", "AF", "2AF", "A*F", "2F", "A+F")
 )
+
 
 
 feather_lookup <- tibble( #table of feather groups
@@ -340,14 +380,16 @@ feather_wide <- feather_durations %>% #convert long df to wide format
 RAZO_prod_mainfile <- hatch_dates %>% #add in feather duration info to hatch date info
   left_join(feather_wide, by = "Nest_unique")
 
-
+# # make sure Nest ID is not an integer for merging with weight data
+# RAZO_prod_mainfile$Nest.ID <- as.character(RAZO_prod_mainfile$Nest.ID)
 
 
 #join weights into main data 
 RAZO_prod_mainfile <- RAZO_prod_mainfile %>%
     left_join(fledge_weightdf, by = c("Year", "Species", "Nest.ID", "Plot"))
 
-
+# for 2025, add in Feathered column so that classification runs NEED TO ADDRESS THIS A BETTER WAY!
+# RAZO_prod_mainfile$feathered <- NA
 
   
 ### Classification Code.----
@@ -386,21 +428,22 @@ classification_df <- RAZO_prod_mainfile %>%
         is.na(ever_fledged_weight)  ~ "Most likely successful", #weight is unknown, 
               
       #Probably successful
-        (!is.na(N_after_chick) | !is.na(U_after_chick)) & 
-        C_min_age >= 16 &
-        (ever_fledged_weight == TRUE | featheremerge >= 11 | feathered <= 6) ~ "Probably successful",
+        (!is.na(N_after_chick) | !is.na(U_after_chick)) & #Chick was not detected on a nest check
+        C_min_age >= 16 & #Chick made it to fledging age
+        (ever_fledged_weight == TRUE | featheremerge >= 11 | feathered <= 6) ~ "Probably successful", 
+            #feather status or weight indicates success
       
       #Decent chance successful
-      (!is.na(N_after_chick) | !is.na(U_after_chick)) & 
-        C_min_age >= 13 &
+      (!is.na(N_after_chick) | !is.na(U_after_chick)) & #Chick was not detected on a nest check
+        C_min_age >= 13 & #Chick made it to min possible fledging age
         (ever_fledged_weight == TRUE | featheremerge >= 11 | feathered <= 6) ~ "Decent chance successful", 
       
       #Possibly successful
-      C_min_age >= 13 &
+      C_min_age >= 13 & #Chick made it to min possible fledging age
         (featheremerge >= 11 | feathered <= 6) ~ "Possibly successful", #removed weight requirement since it is redundant and is included in probably and decent chance
       
       #Aspiring Fledger
-      (is.na(N_after_chick) | is.na(U_after_chick)) & #some birds that do have an N or U are falling into this because they don't meet the feathered thresholds of possibly successful
+      (is.na(N_after_chick) | is.na(U_after_chick)) & #some birds that do have an N or U are falling into this because they don't meet the feathered thresholds of possibly successful (chick was always detected)
         (ever_fledged_weight == FALSE |featheremerge <6 | feathered >10) ~ "Aspiring Fledger", 
       
       #Unknown/Insufficient Data
@@ -410,10 +453,33 @@ classification_df <- RAZO_prod_mainfile %>%
     
       
       
-write.csv(classification_df, "classification2024_test.csv", row.names = FALSE)
-      
-      
+write.csv(classification_df, "classification2021_test.csv", row.names = FALSE)
 
+classification_df <- read.csv("classification2023_test.csv")
+
+## Summary for Gail
+table(classification_df$nest_success_class)
+
+Gail_summary <- classification_df %>%
+  filter(nest_success_class == "Unsuccessful") %>%
+  mutate(
+    nothing_nest = is.na(E_last) & is.na(C_first)
+  ) %>%
+  summarize(
+    never_chick = sum(is.na(C_first)),
+    never_egg = sum(nothing_nest),
+    never_checked = sum(is.na(Last_check)),
+    died = sum(fail_death == T, na.rm = T),
+    not_min_age = sum(fail_age == T, na.rm = T),
+    not_feathered = sum(fail_feather_missing == T, na.rm = T)
+  ) 
+
+Gail_summary <- Gail_summary %>% 
+  pivot_longer(
+    cols = colnames(Gail_summary))
+
+Gail_summary
+    
 # Making the classification into a function where we could input values to quickly make changes might be beneficial potentially. I abandoned it only because I was getting confused what was what when setting it up.
 #classify fledging status 
 classify_fledging <- function(prod_mainfile, # making function so these values are easy to change out (min duration = average minimum chick-rearing duration, reasonable duration is lower chick-rearing duration, FE is feathers emerging status duration, F is feathered)
